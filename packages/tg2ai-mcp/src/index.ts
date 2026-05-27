@@ -5,7 +5,11 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { scrapeChannel, formatExport, parseMultipleChannels } from "@tg2ai/core";
+import {
+  formatExport,
+  parseMultipleChannels,
+  scrapeChannel,
+} from "@tg2ai/core";
 
 const server = new Server(
   {
@@ -16,7 +20,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -24,13 +28,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "fetch_telegram_channel",
-        description: "Scrapes one or more public Telegram channels and returns the content as Markdown. Supports up to 20 channels.",
+        description:
+          "Scrapes one or more public Telegram channels and returns the content as Markdown. Supports up to 20 channels.",
         inputSchema: {
           type: "object",
           properties: {
             channel: {
               type: "string",
-              description: "Channel username(s) or link(s). Can be multiple separated by spaces or commas.",
+              description:
+                "Channel username(s) or link(s). Can be multiple separated by spaces or commas.",
             },
             limit: {
               type: "number",
@@ -65,19 +71,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       for (const channelName of channels) {
         const result = await scrapeChannel(channelName, limit);
         if (result.posts.length > 0) {
-          const files = formatExport(result, "md"); 
+          const files = formatExport(result, "md");
           allFiles.push(...files);
         }
       }
-      
+
       if (allFiles.length === 0) {
         return {
-          content: [{ type: "text", text: "All requested channels are empty." }],
+          content: [
+            { type: "text", text: "All requested channels are empty." },
+          ],
         };
       }
 
       return {
-        content: allFiles.map(f => ({
+        content: allFiles.map((f) => ({
           type: "text" as const,
           text: `File: ${f.filename}\n\n${f.content}`,
         })),

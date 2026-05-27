@@ -1,5 +1,5 @@
 import AdmZip from "adm-zip";
-import type { ChannelMeta, TelegramPost, ScrapeResult } from "./scraper";
+import type { ChannelMeta, ScrapeResult, TelegramPost } from "./scraper";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -53,7 +53,10 @@ function groupByDate(posts: TelegramPost[]): Map<string, TelegramPost[]> {
 }
 
 /** Split posts into chunks based on token count */
-export function chunkPostsByTokens(posts: TelegramPost[], maxTokens: number): TelegramPost[][] {
+export function chunkPostsByTokens(
+  posts: TelegramPost[],
+  maxTokens: number,
+): TelegramPost[][] {
   const chunks: TelegramPost[][] = [];
   let currentChunk: TelegramPost[] = [];
   let currentTokens = 0;
@@ -83,7 +86,7 @@ export function chunkPostsByTokens(posts: TelegramPost[], maxTokens: number): Te
 export function toMarkdown(
   channel: ChannelMeta,
   posts: TelegramPost[],
-  chunkInfo?: { index: number; total: number }
+  chunkInfo?: { index: number; total: number },
 ): string {
   const lines: string[] = [];
   const fullText = posts.map((p) => p.text).join(" ");
@@ -101,7 +104,9 @@ export function toMarkdown(
   lines.push(`estimated_tokens: ${tokens}`);
   lines.push("---");
   lines.push("");
-  lines.push(`# ${channel.title}${chunkInfo ? ` (Part ${chunkInfo.index + 1})` : ""}`);
+  lines.push(
+    `# ${channel.title}${chunkInfo ? ` (Part ${chunkInfo.index + 1})` : ""}`,
+  );
   lines.push("");
   if (channel.description && (!chunkInfo || chunkInfo.index === 0)) {
     lines.push(`> ${channel.description}`);
@@ -137,7 +142,7 @@ export function toMarkdown(
 export function toJSON(
   channel: ChannelMeta,
   posts: TelegramPost[],
-  chunkInfo?: { index: number; total: number }
+  chunkInfo?: { index: number; total: number },
 ): string {
   const fullText = posts.map((p) => p.text).join(" ");
   const output = {
@@ -147,7 +152,9 @@ export function toJSON(
       description: channel.description,
       subscribers: channel.subscribers,
       exported_at: new Date().toISOString(),
-      chunk: chunkInfo ? `${chunkInfo.index + 1}/${chunkInfo.total}` : undefined,
+      chunk: chunkInfo
+        ? `${chunkInfo.index + 1}/${chunkInfo.total}`
+        : undefined,
       posts_in_file: posts.length,
       estimated_tokens: estimateTokens(fullText),
       schema_version: "1.0",
@@ -169,9 +176,17 @@ export function toJSON(
 export function toCSV(
   channel: ChannelMeta,
   posts: TelegramPost[],
-  chunkInfo?: { index: number; total: number }
+  chunkInfo?: { index: number; total: number },
 ): string {
-  const headers = ["id", "date", "text", "views", "media_type", "forward_from", "url"];
+  const headers = [
+    "id",
+    "date",
+    "text",
+    "views",
+    "media_type",
+    "forward_from",
+    "url",
+  ];
   const lines: string[] = [headers.join(",")];
 
   function escapeCSV(value: string): string {
@@ -200,13 +215,15 @@ export function toCSV(
 export function toTOON(
   channel: ChannelMeta,
   posts: TelegramPost[],
-  chunkInfo?: { index: number; total: number }
+  chunkInfo?: { index: number; total: number },
 ): string {
   const header = `CHANNEL: @${channel.name}\nTITLE: ${channel.title}\n${chunkInfo ? `CHUNK: ${chunkInfo.index + 1}/${chunkInfo.total}\n` : ""}---\n`;
-  const body = posts.map(p => {
-    const date = p.date.split("T")[0];
-    return `[${p.id}|${date}|${p.views}v] ${p.text.replace(/\n/g, " ")}`;
-  }).join("\n");
+  const body = posts
+    .map((p) => {
+      const date = p.date.split("T")[0];
+      return `[${p.id}|${date}|${p.views}v] ${p.text.replace(/\n/g, " ")}`;
+    })
+    .join("\n");
   return header + body;
 }
 
@@ -227,7 +244,7 @@ export interface ExportFile {
 export function formatExport(
   result: ScrapeResult,
   format: FormatType,
-  maxTokens = MAX_TOKENS_PER_FILE
+  maxTokens = MAX_TOKENS_PER_FILE,
 ): ExportFile[] {
   const { channel, posts } = result;
   const ts = new Date().toISOString().slice(0, 10);
@@ -237,9 +254,10 @@ export function formatExport(
   const files: ExportFile[] = [];
 
   postChunks.forEach((chunk, index) => {
-    const chunkInfo = postChunks.length > 1 ? { index, total: postChunks.length } : undefined;
+    const chunkInfo =
+      postChunks.length > 1 ? { index, total: postChunks.length } : undefined;
     const suffix = chunkInfo ? `_part${index + 1}` : "";
-    
+
     let content = "";
     let filename = "";
     let mimeType = "";
@@ -270,12 +288,12 @@ export function formatExport(
     const firstDate = chunk[0].date.split("T")[0];
     const lastDate = chunk[chunk.length - 1].date.split("T")[0];
 
-    files.push({ 
-      content, 
-      filename, 
-      mimeType, 
+    files.push({
+      content,
+      filename,
+      mimeType,
       postsInChunk: chunk.length,
-      dateRange: `${firstDate} - ${lastDate}`
+      dateRange: `${firstDate} - ${lastDate}`,
     });
   });
 

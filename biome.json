@@ -13,5 +13,8 @@
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2
+  },
+  "files": {
+    "ignore": ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/bun.lock"]
   }
 }

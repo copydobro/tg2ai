@@ -2,11 +2,7 @@
   "name": "tg2ai-monorepo",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "skills/*"
-  ],
+  "workspaces": ["apps/*", "packages/*", "skills/*"],
   "scripts": {
     "build": "bun run --filter @tg2ai/web-bot build",
     "dev:bot": "bun run --filter @tg2ai/web-bot dev",

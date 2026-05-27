@@ -1,5 +1,11 @@
+import {
+  type FormatType,
+  createArchive,
+  formatExport,
+  parseMultipleChannels,
+  scrapeChannel,
+} from "@tg2ai/core";
 import { Bot, InlineKeyboard, InputFile } from "grammy";
-import { scrapeChannel, parseMultipleChannels, formatExport, createArchive, type FormatType } from "@tg2ai/core";
 
 // ---------------------------------------------------------------------------
 // Bot instance (re-created per invocation in serverless — that's fine)
@@ -34,14 +40,16 @@ interface BotStrings {
 
 const strings: Record<"ru" | "en", BotStrings> = {
   ru: {
-    start: `👋 <b>TG2AI</b> — экспорт Telegram-каналов в AI-ready форматы\n\n` +
+    start:
+      `👋 <b>TG2AI</b> — экспорт Telegram-каналов в AI-ready форматы\n\n` +
       `Отправьте мне ссылку на публичный канал:\n` +
       `• <code>https://t.me/durov</code>\n` +
       `• <code>@durov</code>\n` +
       `• <code>durov</code>\n\n` +
       `Я выгружу его в <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> или <b>TOON</b> — ` +
       `оптимизированные для ChatGPT, Claude, RAG и fine-tuning.`,
-    help: `📖 <b>Как использовать:</b>\n\n` +
+    help:
+      `📖 <b>Как использовать:</b>\n\n` +
       `1. Отправьте ссылку на канал или @username\n` +
       `2. Выберите формат экспорта\n` +
       `3. Получите готовый файл для AI\n\n` +
@@ -55,7 +63,8 @@ const strings: Record<"ru" | "en", BotStrings> = {
     chooseFormat: `📡 Канал(ы): <b>{{channel}}</b>\n\nВыберите формат экспорта:`,
     exporting: `⏳ Экспортирую <b>@{{channel}}</b> в <b>{{format}}</b>...\n\nЭто может занять до 30 секунд.`,
     emptyOrUnavailable: `⚠️ Канал <b>@{{channel}}</b> пуст или недоступен.`,
-    caption: `✅ <b>@{{channel}}</b>\n` +
+    caption:
+      `✅ <b>@{{channel}}</b>\n` +
       `📝 {{postsCount}} постов | 📦 {{size}} KB\n` +
       `💰 ~{{tokens}} токенов`,
     completed: `✅ Экспорт <b>@{{channel}}</b> → <b>{{format}}</b> завершён.`,
@@ -63,17 +72,19 @@ const strings: Record<"ru" | "en", BotStrings> = {
     btnMarkdown: "📄 Markdown",
     btnJson: "📋 JSON",
     btnCsv: "📊 CSV",
-    btnToon: "🚀 TOON"
+    btnToon: "🚀 TOON",
   },
   en: {
-    start: `👋 <b>TG2AI</b> — export Telegram channels to AI-ready formats\n\n` +
+    start:
+      `👋 <b>TG2AI</b> — export Telegram channels to AI-ready formats\n\n` +
       `Send me a link to a public channel:\n` +
       `• <code>https://t.me/durov</code>\n` +
       `• <code>@durov</code>\n` +
       `• <code>durov</code>\n\n` +
       `I will export it to <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> or <b>TOON</b> — ` +
       `fully optimized for ChatGPT, Claude, RAG, and fine-tuning.`,
-    help: `📖 <b>How to use:</b>\n\n` +
+    help:
+      `📖 <b>How to use:</b>\n\n` +
       `1. Send a channel link or @username\n` +
       `2. Choose export format\n` +
       `3. Get your AI-ready file\n\n` +
@@ -87,7 +98,8 @@ const strings: Record<"ru" | "en", BotStrings> = {
     chooseFormat: `📡 Channel(s): <b>{{channel}}</b>\n\nChoose export format:`,
     exporting: `⏳ Exporting <b>@{{channel}}</b> to <b>{{format}}</b>...\n\nThis may take up to 30 seconds.`,
     emptyOrUnavailable: `⚠️ Channel <b>@{{channel}}</b> is empty or unavailable.`,
-    caption: `✅ <b>@{{channel}}</b>\n` +
+    caption:
+      `✅ <b>@{{channel}}</b>\n` +
       `📝 {{postsCount}} posts | 📦 {{size}} KB\n` +
       `💰 ~{{tokens}} tokens`,
     completed: `✅ Export of <b>@{{channel}}</b> → <b>{{format}}</b> completed.`,
@@ -95,8 +107,8 @@ const strings: Record<"ru" | "en", BotStrings> = {
     btnMarkdown: "📄 Markdown",
     btnJson: "📋 JSON",
     btnCsv: "📊 CSV",
-    btnToon: "🚀 TOON"
-  }
+    btnToon: "🚀 TOON",
+  },
 };
 
 function getLocale(languageCode?: string): "ru" | "en" {
@@ -148,14 +160,17 @@ bot.on("message:text", async (ctx) => {
     .text(t.btnCsv, `fmt:csv:${lang}`)
     .text(t.btnToon, `fmt:toon:${lang}`);
 
-  const channelList = channels.map(c => `@${c}`).join(", ");
-  const label = channels.length > 1 ? `${channels.length} channels (${channelList})` : `@${channels[0]}`;
+  const channelList = channels.map((c) => `@${c}`).join(", ");
+  const label =
+    channels.length > 1
+      ? `${channels.length} channels (${channelList})`
+      : `@${channels[0]}`;
   const msg = t.chooseFormat.replace("{{channel}}", label);
-  
-  await ctx.reply(msg, { 
-    parse_mode: "HTML", 
+
+  await ctx.reply(msg, {
+    parse_mode: "HTML",
     reply_markup: keyboard,
-    reply_parameters: { message_id: ctx.message.message_id }
+    reply_parameters: { message_id: ctx.message.message_id },
   });
 });
 
@@ -189,9 +204,12 @@ bot.on("callback_query:data", async (ctx) => {
   await ctx.answerCallbackQuery();
   const t = strings[lang];
 
-  const statusMsg = channels.length > 1 
-    ? `⏳ Exporting ${channels.length} channels to ${format.toUpperCase()}...`
-    : t.exporting.replace("{{channel}}", channels[0]).replace("{{format}}", format.toUpperCase());
+  const statusMsg =
+    channels.length > 1
+      ? `⏳ Exporting ${channels.length} channels to ${format.toUpperCase()}...`
+      : t.exporting
+          .replace("{{channel}}", channels[0])
+          .replace("{{format}}", format.toUpperCase());
 
   await ctx.editMessageText(statusMsg, { parse_mode: "HTML" });
 
@@ -209,7 +227,10 @@ bot.on("callback_query:data", async (ctx) => {
     }
 
     if (allFiles.length === 0) {
-      await ctx.editMessageText("⚠️ All requested channels are empty or unavailable.", { parse_mode: "HTML" });
+      await ctx.editMessageText(
+        "⚠️ All requested channels are empty or unavailable.",
+        { parse_mode: "HTML" },
+      );
       return;
     }
 
@@ -217,8 +238,11 @@ bot.on("callback_query:data", async (ctx) => {
 
     if (shouldZip) {
       const zipBuffer = createArchive(allFiles);
-      const zipFile = new InputFile(zipBuffer, `tg2ai_export_${new Date().toISOString().slice(0, 10)}.zip`);
-      
+      const zipFile = new InputFile(
+        zipBuffer,
+        `tg2ai_export_${new Date().toISOString().slice(0, 10)}.zip`,
+      );
+
       await ctx.replyWithDocument(zipFile, {
         caption: `✅ <b>Export Complete</b>\n📚 Channels: ${channels.length}\n📝 Total posts: ${totalPosts}\n📦 Multi-channel Archive`,
         parse_mode: "HTML",
@@ -236,10 +260,15 @@ bot.on("callback_query:data", async (ctx) => {
       }
     }
 
-    const completedLabel = channels.length > 1 ? `${channels.length} channels` : `@${channels[0]}`;
-    await ctx.editMessageText(`✅ Export of ${completedLabel} completed.`, { parse_mode: "HTML" });
+    const completedLabel =
+      channels.length > 1 ? `${channels.length} channels` : `@${channels[0]}`;
+    await ctx.editMessageText(`✅ Export of ${completedLabel} completed.`, {
+      parse_mode: "HTML",
+    });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Error";
-    await ctx.editMessageText(`❌ Error during export:\n<code>${msg}</code>`, { parse_mode: "HTML" });
+    await ctx.editMessageText(`❌ Error during export:\n<code>${msg}</code>`, {
+      parse_mode: "HTML",
+    });
   }
 });
