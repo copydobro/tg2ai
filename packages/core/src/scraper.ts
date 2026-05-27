@@ -68,7 +68,7 @@ function parseViews(raw: string | undefined): string {
   return sanitizeText(raw.trim());
 }
 
-function detectMedia($el: cheerio.Cheerio<cheerio.Element>): {
+function detectMedia($el: cheerio.Cheerio<any>): {
   type: TelegramPost["mediaType"];
   url: string | null;
 } {
