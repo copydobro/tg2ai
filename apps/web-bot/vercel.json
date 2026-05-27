@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "src/app/api/webhook/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/set-webhook/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}

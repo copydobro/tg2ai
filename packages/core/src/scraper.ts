@@ -29,6 +29,34 @@ export interface ScrapeResult {
 }
 
 // ---------------------------------------------------------------------------
+// Security Guardrails & Sanitization
+// ---------------------------------------------------------------------------
+
+/**
+ * Sanitize text to prevent common injection attacks and clean up output.
+ * - Removes zero-width characters.
+ * - Replaces potential shell/SQL control characters if found in suspicious patterns.
+ * - Truncates excessively long words to prevent buffer issues in downstream LLMs.
+ */
+export function sanitizeText(text: string): string {
+  if (!text) return "";
+
+  return text
+    .replace(/[\u200B-\u200D\uFEFF]/g, "") // Remove zero-width spaces
+    .replace(/[\\'"`;]/g, (match) => `\\${match}`) // Escape potential SQL/Shell meta-chars
+    .replace(/\b(\w{100,})\b/g, "$1...") // Truncate excessively long words
+    .trim();
+}
+
+/**
+ * Validate Telegram username against official constraints.
+ * Rules: 5-32 chars, a-z, 0-9, underscores, must start with letter.
+ */
+export function isValidUsername(username: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(username);
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -37,12 +65,13 @@ const UA =
 
 function parseViews(raw: string | undefined): string {
   if (!raw) return "0";
-  return raw.trim();
+  return sanitizeText(raw.trim());
 }
 
-function detectMedia(
-  $el: cheerio.Cheerio<any>,
-): { type: TelegramPost["mediaType"]; url: string | null } {
+function detectMedia($el: cheerio.Cheerio<cheerio.Element>): {
+  type: TelegramPost["mediaType"];
+  url: string | null;
+} {
   const photo = $el.find(".tgme_widget_message_photo_wrap");
   if (photo.length) {
     const style = photo.attr("style") || "";
@@ -62,7 +91,7 @@ function detectMedia(
 // Extract posts from a single HTML page
 // ---------------------------------------------------------------------------
 
-function extractPosts(html: string, channelName: string): TelegramPost[] {
+function extractPosts(html: string): TelegramPost[] {
   const $ = cheerio.load(html);
   const posts: TelegramPost[] = [];
 
@@ -71,12 +100,12 @@ function extractPosts(html: string, channelName: string): TelegramPost[] {
     const dataPost = $msg.attr("data-post"); // "channel/12345"
     if (!dataPost) return;
 
-    const postId = parseInt(dataPost.split("/")[1], 10);
-    if (isNaN(postId)) return;
+    const postId = Number.parseInt(dataPost.split("/")[1], 10);
+    if (Number.isNaN(postId)) return;
 
     const $text = $msg.find(".tgme_widget_message_text");
     const textHtml = $text.html() || "";
-    const text = $text.text().trim();
+    const text = sanitizeText($text.text());
 
     const dateEl = $msg.find(".tgme_widget_message_date time");
     const date = dateEl.attr("datetime") || "";
@@ -87,7 +116,7 @@ function extractPosts(html: string, channelName: string): TelegramPost[] {
     const media = detectMedia($msg);
 
     const fwdEl = $msg.find(".tgme_widget_message_forwarded_from_name");
-    const forwardFrom = fwdEl.length ? fwdEl.text().trim() : null;
+    const forwardFrom = fwdEl.length ? sanitizeText(fwdEl.text()) : null;
 
     posts.push({
       id: postId,
@@ -108,20 +137,20 @@ function extractPosts(html: string, channelName: string): TelegramPost[] {
 // Extract channel metadata
 // ---------------------------------------------------------------------------
 
-function extractMeta(
-  html: string,
-  channelName: string,
-): ChannelMeta {
+function extractMeta(html: string, channelName: string): ChannelMeta {
   const $ = cheerio.load(html);
 
   const title =
-    $(".tgme_channel_info_header_title").text().trim() || channelName;
-  const description =
-    $(".tgme_channel_info_description").text().trim() || "";
+    sanitizeText($(".tgme_channel_info_header_title").text()) || channelName;
+
+  const description = sanitizeText($(".tgme_channel_info_description").text());
+
   const subscribers =
-    $(".tgme_channel_info_counter .counter_value").first().text().trim() || "?";
-  const photoUrl =
-    $(".tgme_channel_info_header_photo img").attr("src") || null;
+    sanitizeText(
+      $(".tgme_channel_info_counter .counter_value").first().text(),
+    ) || "?";
+
+  const photoUrl = $(".tgme_channel_info_header_photo img").attr("src") || null;
 
   return {
     name: channelName,
@@ -137,44 +166,82 @@ function extractMeta(
 // ---------------------------------------------------------------------------
 
 /**
- * Parse a channel username from various input formats.
+ * Parse channel usernames from various input formats.
  * Supports: @durov, durov, https://t.me/durov, https://t.me/s/durov
+ * Returns a unique array of up to 20 usernames.
+ */
+export function parseMultipleChannels(input: string, limit = 20): string[] {
+  const regex =
+    /(?:https?:\/\/)?t\.me\/(?:s\/)?([a-zA-Z][a-zA-Z0-9_]{4,31})|@([a-zA-Z][a-zA-Z0-9_]{4,31})/g;
+  const matches = new Set<string>();
+
+  let match: RegExpExecArray | null = regex.exec(input);
+  while (match !== null) {
+    const username = match[1] || match[2];
+    if (username && isValidUsername(username)) {
+      matches.add(username);
+    }
+    if (matches.size >= limit) break;
+    match = regex.exec(input);
+  }
+
+  return Array.from(matches);
+}
+
+/**
+ * Parse a single channel username.
  */
 export function parseChannelInput(input: string): string | null {
-  const trimmed = input.trim();
+  const all = parseMultipleChannels(input, 1);
+  return all.length > 0 ? all[0] : null;
+}
 
-  // https://t.me/s/channel or https://t.me/channel
-  const urlMatch = trimmed.match(
-    /(?:https?:\/\/)?t\.me\/(?:s\/)?([a-zA-Z_][a-zA-Z0-9_]{3,})/,
-  );
-  if (urlMatch) return urlMatch[1];
-
-  // @channel
-  const atMatch = trimmed.match(/^@([a-zA-Z_][a-zA-Z0-9_]{3,})$/);
-  if (atMatch) return atMatch[1];
-
-  // plain username
-  const plainMatch = trimmed.match(/^([a-zA-Z_][a-zA-Z0-9_]{3,})$/);
-  if (plainMatch) return plainMatch[1];
-
-  return null;
+/**
+ * Verify if a channel exists and is public by checking the web preview.
+ */
+export async function verifyChannelExists(channelName: string): Promise<boolean> {
+  if (!isValidUsername(channelName)) return false;
+  
+  try {
+    const resp = await fetch(`https://t.me/s/${channelName}`, {
+      method: "HEAD",
+      headers: { "User-Agent": UA },
+    });
+    // Telegram returns 200 for existing channels and usually 200 with "not found" text for missing ones.
+    // However, a 404 or 403 on the /s/ URL definitely means it's not a public channel.
+    if (resp.status === 404 || resp.status === 403) return false;
+    
+    // To be sure, we do a quick GET to check for the 'tgme_page_extra' class which is absent on 404 pages
+    const getResp = await fetch(`https://t.me/s/${channelName}`, {
+      headers: { "User-Agent": UA },
+    });
+    const html = await getResp.text();
+    return html.includes("tgme_channel_info_header");
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Scrape a public Telegram channel.
  * @param channelName — username without @
- * @param maxPosts — stop after collecting this many posts (default 200)
+ * @param maxPosts — stop after collecting this many posts (default 1000)
  */
 export async function scrapeChannel(
   channelName: string,
-  maxPosts = 200,
+  maxPosts = 1000,
 ): Promise<ScrapeResult> {
+  if (!isValidUsername(channelName)) {
+    throw new Error(`Invalid channel username: ${channelName}`);
+  }
+
   const baseUrl = `https://t.me/s/${channelName}`;
 
   // First page — also grab meta
   const firstResp = await fetch(baseUrl, {
     headers: { "User-Agent": UA },
   });
+  
   if (!firstResp.ok) {
     throw new Error(
       `Channel not found or unavailable (HTTP ${firstResp.status})`,
@@ -182,8 +249,14 @@ export async function scrapeChannel(
   }
 
   const firstHtml = await firstResp.text();
+  
+  // Extra check for "Channel not found" pattern in HTML
+  if (firstHtml.includes("tgme_page_icon") && !firstHtml.includes("tgme_channel_info_header")) {
+    throw new Error(`Channel @${channelName} does not exist or is not a public channel.`);
+  }
+
   const channel = extractMeta(firstHtml, channelName);
-  const allPosts: TelegramPost[] = extractPosts(firstHtml, channelName);
+  const allPosts: TelegramPost[] = extractPosts(firstHtml);
 
   // Paginate backwards
   const maxPages = Math.ceil(maxPosts / 20) + 1;
@@ -200,13 +273,12 @@ export async function scrapeChannel(
     if (!resp.ok) break;
 
     const html = await resp.text();
-    const pagePosts = extractPosts(html, channelName);
+    const pagePosts = extractPosts(html);
     if (pagePosts.length === 0) break;
 
     allPosts.push(...pagePosts);
   }
 
-  // Deduplicate by id, sort oldest→newest
   const seen = new Set<number>();
   const unique = allPosts.filter((p) => {
     if (seen.has(p.id)) return false;

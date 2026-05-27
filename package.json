@@ -1,23 +1,17 @@
 {
-  "name": "tg2ai",
+  "name": "tg2ai-monorepo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": ["apps/*", "packages/*", "skills/*"],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "cheerio": "^1.0.0",
-    "grammy": "^1.35.0",
-    "next": "^15.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "build": "bun run --filter @tg2ai/web-bot build",
+    "dev:bot": "bun run --filter @tg2ai/web-bot dev",
+    "test": "bun test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --apply ."
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@biomejs/biome": "1.9.4",
     "typescript": "^5.7.0"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "name": "@tg2ai/cli",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "bin": {
+    "tg2ai": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun src/index.ts"
+  },
+  "dependencies": {
+    "@tg2ai/core": "workspace:*",
+    "commander": "^12.1.0"
+  }
+}
