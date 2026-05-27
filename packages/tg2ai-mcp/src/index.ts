@@ -61,9 +61,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     try {
       const result = await scrapeChannel(channelName, limit);
-      const markdown = toMarkdown(result);
+      const files = formatExport(result, "md"); // Default to md for MCP
+      
       return {
-        content: [{ type: "text", text: markdown }],
+        content: files.map(f => ({
+          type: "text" as const,
+          text: `File: ${f.filename}\n\n${f.content}`,
+        })),
       };
     } catch (error) {
       return {

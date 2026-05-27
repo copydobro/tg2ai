@@ -187,8 +187,8 @@ bot.on("callback_query:data", async (ctx) => {
   await ctx.editMessageText(exportingMsg, { parse_mode: "HTML" });
 
   try {
-    // Scrape
-    const result = await scrapeChannel(channelName, 200);
+    // Scrape up to 1000 posts
+    const result = await scrapeChannel(channelName, 1000);
 
     if (result.posts.length === 0) {
       const emptyMsg = t.emptyOrUnavailable.replace("{{channel}}", channelName);
@@ -196,26 +196,28 @@ bot.on("callback_query:data", async (ctx) => {
       return;
     }
 
-    // Format
-    const { content, filename } = formatExport(result, format);
-    const buffer = Buffer.from(content, "utf-8");
-    const file = new InputFile(buffer, filename);
+    // Format (can return multiple files if > 50k tokens)
+    const files = formatExport(result, format);
 
-    // Calculate stats
-    const sizeKB = Math.ceil(buffer.length / 1024);
-    const tokens = Math.ceil(content.length / 4);
+    for (const f of files) {
+      const buffer = Buffer.from(f.content, "utf-8");
+      const file = new InputFile(buffer, f.filename);
 
-    // Send file
-    const captionMsg = t.caption
-      .replace("{{channel}}", channelName)
-      .replace("{{postsCount}}", String(result.posts.length))
-      .replace("{{size}}", String(sizeKB))
-      .replace("{{tokens}}", tokens.toLocaleString());
+      // Calculate stats for each file
+      const sizeKB = Math.ceil(buffer.length / 1024);
+      const tokens = Math.ceil(f.content.length / 4);
 
-    await ctx.replyWithDocument(file, {
-      caption: captionMsg,
-      parse_mode: "HTML",
-    });
+      const captionMsg = t.caption
+        .replace("{{channel}}", channelName)
+        .replace("{{postsCount}}", String(result.posts.length)) // total posts in export
+        .replace("{{size}}", String(sizeKB))
+        .replace("{{tokens}}", tokens.toLocaleString());
+
+      await ctx.replyWithDocument(file, {
+        caption: captionMsg,
+        parse_mode: "HTML",
+      });
+    }
 
     // Clean up the "exporting..." message
     const completedMsg = t.completed

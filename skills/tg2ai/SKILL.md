@@ -21,7 +21,7 @@ Scrapes a channel and saves it to a file.
 **Parameters:**
 - `channel`: Channel username (e.g., `@durov`) or link.
 - `format`: `md`, `json`, or `csv` (default: `md`).
-- `limit`: Number of posts to fetch (default: 100).
+- `limit`: Number of posts to fetch (default: 1000).
 
 ## Usage Examples
 

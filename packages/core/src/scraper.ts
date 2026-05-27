@@ -163,11 +163,11 @@ export function parseChannelInput(input: string): string | null {
 /**
  * Scrape a public Telegram channel.
  * @param channelName — username without @
- * @param maxPosts — stop after collecting this many posts (default 200)
+ * @param maxPosts — stop after collecting this many posts (default 1000)
  */
 export async function scrapeChannel(
   channelName: string,
-  maxPosts = 200,
+  maxPosts = 1000,
 ): Promise<ScrapeResult> {
   const baseUrl = `https://t.me/s/${channelName}`;
 
