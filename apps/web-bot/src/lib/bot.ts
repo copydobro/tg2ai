@@ -29,6 +29,7 @@ interface BotStrings {
   btnMarkdown: string;
   btnJson: string;
   btnCsv: string;
+  btnToon: string;
 }
 
 const strings: Record<"ru" | "en", BotStrings> = {
@@ -38,7 +39,7 @@ const strings: Record<"ru" | "en", BotStrings> = {
       `• <code>https://t.me/durov</code>\n` +
       `• <code>@durov</code>\n` +
       `• <code>durov</code>\n\n` +
-      `Я выгружу его в <b>Markdown</b>, <b>JSON</b> или <b>CSV</b> — ` +
+      `Я выгружу его в <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> или <b>TOON</b> — ` +
       `оптимизированные для ChatGPT, Claude, RAG и fine-tuning.`,
     help: `📖 <b>Как использовать:</b>\n\n` +
       `1. Отправьте ссылку на канал или @username\n` +
@@ -47,8 +48,9 @@ const strings: Record<"ru" | "en", BotStrings> = {
       `<b>Форматы:</b>\n` +
       `📄 <b>Markdown</b> — для ChatGPT / Claude / Obsidian\n` +
       `📋 <b>JSON</b> — для RAG / fine-tuning / разработки\n` +
-      `📊 <b>CSV</b> — для таблиц / Excel\n\n` +
-      `Бот экспортирует до 200 последних постов из публичных каналов.`,
+      `📊 <b>CSV</b> — для таблиц / Excel\n` +
+      `🚀 <b>TOON</b> — экстра-сжатый формат для AI\n\n` +
+      `Бот экспортирует до 1000 последних постов из публичных каналов.`,
     invalidChannel: `❌ Не могу распознать канал.\n\nОтправьте ссылку вида <code>@durov</code> или <code>https://t.me/durov</code>`,
     chooseFormat: `📡 Канал: <b>@{{channel}}</b>\n\nВыберите формат экспорта:`,
     exporting: `⏳ Экспортирую <b>@{{channel}}</b> в <b>{{format}}</b>...\n\nЭто может занять до 30 секунд.`,
@@ -60,7 +62,8 @@ const strings: Record<"ru" | "en", BotStrings> = {
     error: `❌ Ошибка при экспорте <b>@{{channel}}</b>:\n<code>{{msg}}</code>`,
     btnMarkdown: "📄 Markdown",
     btnJson: "📋 JSON",
-    btnCsv: "📊 CSV"
+    btnCsv: "📊 CSV",
+    btnToon: "🚀 TOON"
   },
   en: {
     start: `👋 <b>TG2AI</b> — export Telegram channels to AI-ready formats\n\n` +
@@ -68,7 +71,7 @@ const strings: Record<"ru" | "en", BotStrings> = {
       `• <code>https://t.me/durov</code>\n` +
       `• <code>@durov</code>\n` +
       `• <code>durov</code>\n\n` +
-      `I will export it to <b>Markdown</b>, <b>JSON</b> or <b>CSV</b> — ` +
+      `I will export it to <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> or <b>TOON</b> — ` +
       `fully optimized for ChatGPT, Claude, RAG, and fine-tuning.`,
     help: `📖 <b>How to use:</b>\n\n` +
       `1. Send a channel link or @username\n` +
@@ -77,8 +80,9 @@ const strings: Record<"ru" | "en", BotStrings> = {
       `<b>Formats:</b>\n` +
       `📄 <b>Markdown</b> — for ChatGPT / Claude / Obsidian\n` +
       `📋 <b>JSON</b> — for RAG / fine-tuning / development\n` +
-      `📊 <b>CSV</b> — for tables / Excel\n\n` +
-      `The bot exports up to 200 recent posts from public channels.`,
+      `📊 <b>CSV</b> — for tables / Excel\n` +
+      `🚀 <b>TOON</b> — compressed format for AI\n\n` +
+      `The bot exports up to 1000 recent posts from public channels.`,
     invalidChannel: `❌ Cannot parse channel.\n\nSend a link like <code>@durov</code> or <code>https://t.me/durov</code>`,
     chooseFormat: `📡 Channel: <b>@{{channel}}</b>\n\nChoose export format:`,
     exporting: `⏳ Exporting <b>@{{channel}}</b> to <b>{{format}}</b>...\n\nThis may take up to 30 seconds.`,
@@ -90,7 +94,8 @@ const strings: Record<"ru" | "en", BotStrings> = {
     error: `❌ Error exporting <b>@{{channel}}</b>:\n<code>{{msg}}</code>`,
     btnMarkdown: "📄 Markdown",
     btnJson: "📋 JSON",
-    btnCsv: "📊 CSV"
+    btnCsv: "📊 CSV",
+    btnToon: "🚀 TOON"
   }
 };
 
@@ -141,7 +146,9 @@ bot.on("message:text", async (ctx) => {
   const keyboard = new InlineKeyboard()
     .text(t.btnMarkdown, `fmt:md:${channelName}:${lang}`)
     .text(t.btnJson, `fmt:json:${channelName}:${lang}`)
-    .text(t.btnCsv, `fmt:csv:${channelName}:${lang}`);
+    .row()
+    .text(t.btnCsv, `fmt:csv:${channelName}:${lang}`)
+    .text(t.btnToon, `fmt:toon:${channelName}:${lang}`);
 
   const msg = t.chooseFormat.replace("{{channel}}", channelName);
   await ctx.reply(msg, { parse_mode: "HTML", reply_markup: keyboard });
@@ -169,7 +176,8 @@ bot.on("callback_query:data", async (ctx) => {
   const channelName = parts[2];
   const lang = (parts[3] || "en") as "ru" | "en";
 
-  if (!["md", "json", "csv"].includes(format)) {
+  const supportedFormats = ["md", "json", "csv", "toon"];
+  if (!supportedFormats.includes(format)) {
     await ctx.answerCallbackQuery({ text: "Unknown format" });
     return;
   }
@@ -209,9 +217,10 @@ bot.on("callback_query:data", async (ctx) => {
 
       const captionMsg = t.caption
         .replace("{{channel}}", channelName)
-        .replace("{{postsCount}}", String(result.posts.length)) // total posts in export
+        .replace("{{postsCount}}", String(f.postsInChunk)) // show posts in this specific file
         .replace("{{size}}", String(sizeKB))
-        .replace("{{tokens}}", tokens.toLocaleString());
+        .replace("{{tokens}}", tokens.toLocaleString()) + 
+        (f.dateRange ? `\n📅 ${f.dateRange}` : "");
 
       await ctx.replyWithDocument(file, {
         caption: captionMsg,

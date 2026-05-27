@@ -220,15 +220,34 @@ export function toCSV(
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // Format dispatcher
 // ---------------------------------------------------------------------------
 
-export type FormatType = "md" | "json" | "csv";
+export type FormatType = "md" | "json" | "csv" | "toon";
 
 export interface ExportFile {
   content: string;
   filename: string;
   mimeType: string;
+  postsInChunk: number;
+  dateRange?: string;
+}
+
+/** TOON (Token-Optimized Object Notation) Formatter */
+export function toTOON(
+  channel: ChannelMeta,
+  posts: TelegramPost[],
+  chunkInfo?: { index: number; total: number }
+): string {
+  const header = `CHANNEL: @${channel.name}\nTITLE: ${channel.title}\n${chunkInfo ? `CHUNK: ${chunkInfo.index + 1}/${chunkInfo.total}\n` : ""}---\n`;
+  
+  const body = posts.map(p => {
+    const date = p.date.split("T")[0];
+    return `[${p.id}|${date}|${p.views}v] ${p.text.replace(/\n/g, " ")}`;
+  }).join("\n");
+
+  return header + body;
 }
 
 export function formatExport(
@@ -267,9 +286,23 @@ export function formatExport(
         filename = `${base}${suffix}.csv`;
         mimeType = "text/csv";
         break;
+      case "toon":
+        content = toTOON(channel, chunk, chunkInfo);
+        filename = `${base}${suffix}.toon`;
+        mimeType = "text/plain";
+        break;
     }
 
-    files.push({ content, filename, mimeType });
+    const firstDate = chunk[0].date.split("T")[0];
+    const lastDate = chunk[chunk.length - 1].date.split("T")[0];
+
+    files.push({ 
+      content, 
+      filename, 
+      mimeType, 
+      postsInChunk: chunk.length,
+      dateRange: `${firstDate} - ${lastDate}`
+    });
   });
 
   return files;
