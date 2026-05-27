@@ -1,9 +1,13 @@
 {
   "name": "@tg2ai/mcp",
   "version": "0.1.0",
+  "description": "TG2AI MCP Server for Telegram channel data extraction",
   "private": true,
   "main": "src/index.ts",
   "type": "module",
+  "bin": {
+    "tg2ai-mcp": "./src/index.ts"
+  },
   "scripts": {
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts"

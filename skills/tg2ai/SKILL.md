@@ -1,38 +1,62 @@
 ---
 name: tg2ai
-description: Export public Telegram channels to AI-ready formats (Markdown, JSON, CSV). Supports token estimation, data cleaning, and structured extraction for RAG and LLM context.
+description: Export public Telegram channels to AI-ready formats (Markdown, JSON, CSV, TOON). Supports token estimation, automatic file chunking (50k tokens), and structured extraction for RAG and LLM context.
 ---
 
 # 🤖 TG2AI Skill
 
-This skill allows you to extract data from any public Telegram channel directly into your workspace.
+TG2AI provides powerful tools for AI agents to fetch, index, and analyze content from public Telegram channels.
 
-## Installation
+## Quick Installation
 
 ```bash
 npx skills add https://github.com/copydobro/tg2ai/tree/main/skills/tg2ai
 ```
 
-## Tools
+After installation, your agent (Claude Code, Gemini CLI, etc.) will have access to the following tools.
+
+## 🛠 Available Tools
 
 ### `fetch_telegram_channel`
-Scrapes a channel and saves it to a file.
+Scrapes a public Telegram channel and returns the content. Automatically handles large channels by splitting data into chunks (max 50,000 tokens per chunk).
 
-**Parameters:**
-- `channel`: Channel username (e.g., `@durov`) or link.
-- `format`: `md`, `json`, or `csv` (default: `md`).
-- `limit`: Number of posts to fetch (default: 1000).
+**Arguments:**
+- `channel` (string, required): The channel username (e.g., `@durov`) or a full Telegram link.
+- `limit` (number, optional): Maximum number of posts to fetch. Default is **1000**.
+- `format` (string, optional): One of `md`, `json`, `csv`, `toon`. Default is `md`.
 
-## Usage Examples
+## 📖 Usage Examples
 
-- "Fetch the last 50 posts from @durov as markdown"
-- "Convert https://t.me/telegram to a JSON file for my RAG base"
-- "Get a CSV of recent posts from @nextjs_en"
+Tell your agent:
+- "Fetch the last 300 posts from @durov as markdown and save them to my workspace."
+- "Index https://t.me/junior_pm into TOON format for context."
+- "Get a CSV of recent Telegram posts from @nextjs_en."
 
-## Local Runtime
+## 🚀 Technical Integration (MCP)
 
-The skill uses the `@tg2ai/mcp` server. You can run it manually:
+This skill includes an **MCP (Model Context Protocol)** server. Agents can use it to "read" Telegram like a local file system.
 
+### Manual Server Start
 ```bash
 bun run --filter @tg2ai/mcp start
 ```
+
+### Agent Configuration (mcp_config.json)
+```json
+{
+  "mcpServers": {
+    "tg2ai": {
+      "command": "bun",
+      "args": ["run", "--filter", "@tg2ai/mcp", "start"],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
+## 🛡 Security & Ethics
+- Only scrapes **public** data via web previews.
+- Does not require a user account or phone number.
+- Respects Telegram's terms of service and rate limits.
