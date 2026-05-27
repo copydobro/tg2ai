@@ -42,24 +42,23 @@ const strings: Record<"ru" | "en", BotStrings> = {
   ru: {
     start:
       `👋 <b>TG2AI</b> — экспорт Telegram-каналов в AI-ready форматы\n\n` +
-      `Отправьте мне ссылку на публичный канал:\n` +
-      `• <code>https://t.me/durov</code>\n` +
-      `• <code>@durov</code>\n` +
-      `• <code>durov</code>\n\n` +
-      `Я выгружу его в <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> или <b>TOON</b> — ` +
-      `оптимизированные для ChatGPT, Claude, RAG и fine-tuning.`,
+      `Отправьте мне ссылку на канал (или <b>несколько каналов через запятую</b>):\n` +
+      `• <code>@durov, @telegram</code>\n` +
+      `• <code>https://t.me/durov</code>\n\n` +
+      `Я выгружу их в <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> или <b>TOON</b> — ` +
+      `идеально очищенные и оптимизированные для ChatGPT, Claude и RAG-систем.`,
     help:
       `📖 <b>Как использовать:</b>\n\n` +
-      `1. Отправьте ссылку на канал или @username\n` +
+      `1. Отправьте имя канала (или <b>несколько каналов через запятую</b>, до 20 штук)\n` +
       `2. Выберите формат экспорта\n` +
-      `3. Получите готовый файл для AI\n\n` +
+      `3. Получите файлы (при пакетном экспорте бот автоматически упакует их в один <b>ZIP-архив</b>)\n\n` +
       `<b>Форматы:</b>\n` +
-      `📄 <b>Markdown</b> — для ChatGPT / Claude / Obsidian\n` +
-      `📋 <b>JSON</b> — для RAG / fine-tuning / разработки\n` +
-      `📊 <b>CSV</b> — для таблиц / Excel\n` +
-      `🚀 <b>TOON</b> — экстра-сжатый формат для AI\n\n` +
-      `Бот экспортирует до 1000 последних постов из публичных каналов. Поддерживает до 20 каналов сразу.`,
-    invalidChannel: `❌ Не могу распознать канал.\n\nОтправьте ссылку вида <code>@durov</code> или <code>https://t.me/durov</code>`,
+      `📄 <b>Markdown</b> — для ChatGPT / Claude / Obsidian (группировка по дням)\n` +
+      `📋 <b>JSON</b> — структурированный массив для RAG и баз данных\n` +
+      `📊 <b>CSV</b> — для Google Таблиц / Excel и анализа просмотров\n` +
+      `🚀 <b>TOON</b> — ультра-сжатый формат, экономящий до 80% токенов ИИ\n\n` +
+      `Бот выгружает до 1000 последних постов из публичных каналов. Полностью бесплатно и без регистрации.`,
+    invalidChannel: `❌ Не могу распознать канал(ы).\n\nОтправьте ссылку вида <code>@durov</code> или список через запятую: <code>@durov, @telegram</code>`,
     chooseFormat: `📡 Канал(ы): <b>{{channel}}</b>\n\nВыберите формат экспорта:`,
     exporting: `⏳ Экспортирую <b>@{{channel}}</b> в <b>{{format}}</b>...\n\nЭто может занять до 30 секунд.`,
     emptyOrUnavailable: `⚠️ Канал <b>@{{channel}}</b> пуст или недоступен.`,
@@ -77,24 +76,23 @@ const strings: Record<"ru" | "en", BotStrings> = {
   en: {
     start:
       `👋 <b>TG2AI</b> — export Telegram channels to AI-ready formats\n\n` +
-      `Send me a link to a public channel:\n` +
-      `• <code>https://t.me/durov</code>\n` +
-      `• <code>@durov</code>\n` +
-      `• <code>durov</code>\n\n` +
-      `I will export it to <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> or <b>TOON</b> — ` +
-      `fully optimized for ChatGPT, Claude, RAG, and fine-tuning.`,
+      `Send me a channel link (or **multiple channels separated by commas**):\n` +
+      `• <code>@durov, @telegram</code>\n` +
+      `• <code>https://t.me/durov</code>\n\n` +
+      `I will export them to <b>Markdown</b>, <b>JSON</b>, <b>CSV</b> or <b>TOON</b> — ` +
+      `fully cleaned and optimized for ChatGPT, Claude, and RAG systems.`,
     help:
       `📖 <b>How to use:</b>\n\n` +
-      `1. Send a channel link or @username\n` +
+      `1. Send a channel link (or **multiple channels separated by commas**, up to 20)\n` +
       `2. Choose export format\n` +
-      `3. Get your AI-ready file\n\n` +
+      `3. Get your files (multiple channels will be automatically compiled into a single **ZIP archive**)\n\n` +
       `<b>Formats:</b>\n` +
-      `📄 <b>Markdown</b> — for ChatGPT / Claude / Obsidian\n` +
-      `📋 <b>JSON</b> — for RAG / fine-tuning / development\n` +
-      `📊 <b>CSV</b> — for tables / Excel\n` +
-      `🚀 <b>TOON</b> — compressed format for AI\n\n` +
-      `The bot exports up to 1000 recent posts from public channels. Supports up to 20 channels at once.`,
-    invalidChannel: `❌ Cannot parse channel.\n\nSend a link like <code>@durov</code> or <code>https://t.me/durov</code>`,
+      `📄 <b>Markdown</b> — for ChatGPT / Claude / Obsidian (grouped by date)\n` +
+      `📋 <b>JSON</b> — structured array for RAG and databases\n` +
+      `📊 <b>CSV</b> — for Google Sheets / Excel & growth analytics\n` +
+      `🚀 <b>TOON</b> — hyper-compressed format saving up to 80% of LLM tokens\n\n` +
+      `The bot exports up to 1000 recent posts from public channels. Completely free and stateless.`,
+    invalidChannel: `❌ Cannot parse channel(s).\n\nSend a link like <code>@durov</code> or a list: <code>@durov, @telegram</code>`,
     chooseFormat: `📡 Channel(s): <b>{{channel}}</b>\n\nChoose export format:`,
     exporting: `⏳ Exporting <b>@{{channel}}</b> to <b>{{format}}</b>...\n\nThis may take up to 30 seconds.`,
     emptyOrUnavailable: `⚠️ Channel <b>@{{channel}}</b> is empty or unavailable.`,
