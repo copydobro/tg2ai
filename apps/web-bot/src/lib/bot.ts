@@ -1,17 +1,16 @@
 import { Bot, InlineKeyboard, InputFile } from "grammy";
-import { scrapeChannel, parseChannelInput } from "./scraper";
-import { formatExport, type FormatType } from "./formatters";
+import { scrapeChannel, parseChannelInput, formatExport, type FormatType } from "@tg2ai/core";
 
 // ---------------------------------------------------------------------------
 // Bot instance (re-created per invocation in serverless — that's fine)
 // ---------------------------------------------------------------------------
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-if (!token) {
-  throw new Error("TELEGRAM_BOT_TOKEN is not set");
+if (!token && process.env.NODE_ENV === "production") {
+  console.warn("TELEGRAM_BOT_TOKEN is not set. Bot will not function.");
 }
 
-export const bot = new Bot(token);
+export const bot = new Bot(token || "dummy_token");
 
 // ---------------------------------------------------------------------------
 // Localization & Translations

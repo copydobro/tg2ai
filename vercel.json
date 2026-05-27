@@ -1,10 +1,6 @@
 {
-  "functions": {
-    "src/app/api/webhook/route.ts": {
-      "maxDuration": 60
-    },
-    "src/app/api/set-webhook/route.ts": {
-      "maxDuration": 10
-    }
-  }
+  "buildCommand": "cd apps/web-bot && bun install && bun run build",
+  "outputDirectory": "apps/web-bot/.next",
+  "installCommand": "bun install",
+  "framework": "nextjs"
 }
