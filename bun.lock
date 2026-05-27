@@ -26,6 +26,17 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/cli": {
+      "name": "@tg2ai/cli",
+      "version": "0.1.0",
+      "bin": {
+        "tg2ai": "./src/index.ts",
+      },
+      "dependencies": {
+        "@tg2ai/core": "workspace:*",
+        "commander": "^12.1.0",
+      },
+    },
     "packages/core": {
       "name": "@tg2ai/core",
       "version": "0.1.0",
@@ -143,6 +154,8 @@
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
 
+    "@tg2ai/cli": ["@tg2ai/cli@workspace:packages/cli"],
+
     "@tg2ai/core": ["@tg2ai/core@workspace:packages/core"],
 
     "@tg2ai/mcp": ["@tg2ai/mcp@workspace:packages/tg2ai-mcp"],
@@ -184,6 +197,8 @@
     "cheerio-select": ["cheerio-select@2.1.0", "", { "dependencies": { "boolbase": "^1.0.0", "css-select": "^5.1.0", "css-what": "^6.1.0", "domelementtype": "^2.3.0", "domhandler": "^5.0.3", "domutils": "^3.0.1" } }, "sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g=="],
 
     "client-only": ["client-only@0.0.1", "", {}, "sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA=="],
+
+    "commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "content-disposition": ["content-disposition@1.1.0", "", {}, "sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g=="],
 
