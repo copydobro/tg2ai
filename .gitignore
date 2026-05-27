@@ -6,3 +6,13 @@ node_modules/
 next-env.d.ts
 
 .vercel
+
+# Hidden skill folders for different agents
+.agent/
+.agents/
+.claude/
+
+# Temporary exports and logs
+*.toon
+*.zip
+skills-lock.json
