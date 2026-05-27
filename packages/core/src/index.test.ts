@@ -5,8 +5,9 @@ describe("Security Guardrails", () => {
   test("sanitizeText should escape shell and SQL meta-characters", () => {
     const malicious = "'; DROP TABLE users; --";
     const sanitized = sanitizeText(malicious);
-    // Fixed expectation to match actual implementation (escapes ', ", `, ;)
-    expect(sanitized).toBe("\\'; DROP TABLE users\\; --");
+    // Implementation uses .replace(/[\\'"`;]/g, (match) => `\\${match}`)
+    // In JS string literal, '\\\'' represents a single backslash followed by a single quote.
+    expect(sanitized).toBe("\\'\\; DROP TABLE users\\; --");
   });
 
   test("sanitizeText should truncate excessively long words", () => {
