@@ -5,7 +5,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { scrapeChannel, toMarkdown, parseChannelInput } from "@tg2ai/core";
+import { scrapeChannel, formatExport, parseMultipleChannels } from "@tg2ai/core";
 
 const server = new Server(
   {
@@ -24,18 +24,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "fetch_telegram_channel",
-        description: "Scrapes a public Telegram channel and returns it as Markdown.",
+        description: "Scrapes one or more public Telegram channels and returns the content as Markdown. Supports up to 20 channels.",
         inputSchema: {
           type: "object",
           properties: {
             channel: {
               type: "string",
-              description: "Channel username (e.g., '@durov') or link.",
+              description: "Channel username(s) or link(s). Can be multiple separated by spaces or commas.",
             },
             limit: {
               type: "number",
-              description: "Max posts to fetch (default: 100).",
-              default: 100,
+              description: "Max posts to fetch per channel (default: 1000).",
+              default: 1000,
             },
           },
           required: ["channel"],
@@ -47,25 +47,37 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (request.params.name === "fetch_telegram_channel") {
-    const { channel, limit = 100 } = request.params.arguments as {
+    const { channel, limit = 1000 } = request.params.arguments as {
       channel: string;
       limit?: number;
     };
 
-    const channelName = parseChannelInput(channel);
-    if (!channelName) {
+    const channels = parseMultipleChannels(channel, 20);
+    if (channels.length === 0) {
       return {
-        content: [{ type: "text", text: "Invalid channel input." }],
+        content: [{ type: "text", text: "No valid channels found." }],
         isError: true,
       };
     }
 
     try {
-      const result = await scrapeChannel(channelName, limit);
-      const files = formatExport(result, "md"); // Default to md for MCP
+      const allFiles = [];
+      for (const channelName of channels) {
+        const result = await scrapeChannel(channelName, limit);
+        if (result.posts.length > 0) {
+          const files = formatExport(result, "md"); 
+          allFiles.push(...files);
+        }
+      }
       
+      if (allFiles.length === 0) {
+        return {
+          content: [{ type: "text", text: "All requested channels are empty." }],
+        };
+      }
+
       return {
-        content: files.map(f => ({
+        content: allFiles.map(f => ({
           type: "text" as const,
           text: `File: ${f.filename}\n\n${f.content}`,
         })),

@@ -137,27 +137,35 @@ function extractMeta(
 // ---------------------------------------------------------------------------
 
 /**
- * Parse a channel username from various input formats.
+ * Parse channel usernames from various input formats.
  * Supports: @durov, durov, https://t.me/durov, https://t.me/s/durov
+ * Returns a unique array of up to 20 usernames.
+ */
+export function parseMultipleChannels(input: string, limit = 20): string[] {
+  // 1. URLs: t.me/s/channel or t.me/channel
+  // 2. Mentions: @channel
+  // Rules: 5-32 chars, a-z, 0-9, underscores.
+  const regex = /(?:https?:\/\/)?t\.me\/(?:s\/)?([a-zA-Z][a-zA-Z0-9_]{4,31})|@([a-zA-Z][a-zA-Z0-9_]{4,31})/g;
+  const matches = new Set<string>();
+  
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(input)) !== null) {
+    const username = match[1] || match[2];
+    if (username) {
+      matches.add(username);
+    }
+    if (matches.size >= limit) break;
+  }
+
+  return Array.from(matches);
+}
+
+/**
+ * Parse a single channel username.
  */
 export function parseChannelInput(input: string): string | null {
-  const trimmed = input.trim();
-
-  // https://t.me/s/channel or https://t.me/channel
-  const urlMatch = trimmed.match(
-    /(?:https?:\/\/)?t\.me\/(?:s\/)?([a-zA-Z_][a-zA-Z0-9_]{3,})/,
-  );
-  if (urlMatch) return urlMatch[1];
-
-  // @channel
-  const atMatch = trimmed.match(/^@([a-zA-Z_][a-zA-Z0-9_]{3,})$/);
-  if (atMatch) return atMatch[1];
-
-  // plain username
-  const plainMatch = trimmed.match(/^([a-zA-Z_][a-zA-Z0-9_]{3,})$/);
-  if (plainMatch) return plainMatch[1];
-
-  return null;
+  const all = parseMultipleChannels(input, 1);
+  return all.length > 0 ? all[0] : null;
 }
 
 /**

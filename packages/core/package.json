@@ -8,6 +8,10 @@
     "test": "bun test"
   },
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8"
   }
 }

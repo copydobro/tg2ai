@@ -1,3 +1,4 @@
+import AdmZip from "adm-zip";
 import type { ChannelMeta, TelegramPost, ScrapeResult } from "./scraper";
 
 // ---------------------------------------------------------------------------
@@ -23,7 +24,7 @@ function htmlToMarkdown(html: string): string {
     .replace(/<b>(.*?)<\/b>/gi, "**$1**")
     .replace(/<strong>(.*?)<\/strong>/gi, "**$1**")
     .replace(/<i>(.*?)<\/i>/gi, "*$1*")
-    .replace(/em>(.*?)<\/em>/gi, "*$1*")
+    .replace(/<em>(.*?)<\/em>/gi, "*$1*")
     .replace(/<code>(.*?)<\/code>/gi, "`$1`")
     .replace(/<pre>(.*?)<\/pre>/gis, "```\n$1\n```")
     .replace(/<a[^>]+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)")
@@ -76,7 +77,7 @@ export function chunkPostsByTokens(posts: TelegramPost[], maxTokens: number): Te
 }
 
 // ---------------------------------------------------------------------------
-// Markdown formatter
+// Formatters
 // ---------------------------------------------------------------------------
 
 export function toMarkdown(
@@ -88,7 +89,6 @@ export function toMarkdown(
   const fullText = posts.map((p) => p.text).join(" ");
   const tokens = estimateTokens(fullText);
 
-  // YAML frontmatter
   lines.push("---");
   lines.push(`channel: "@${channel.name}"`);
   lines.push(`title: "${channel.title}"`);
@@ -108,47 +108,31 @@ export function toMarkdown(
     lines.push("");
   }
 
-  // Group posts by date
   const grouped = groupByDate(posts);
-
   for (const [date, dayPosts] of grouped) {
     lines.push(`## ${date}`);
     lines.push("");
-
     for (const post of dayPosts) {
       lines.push(`### Post #${post.id}`);
       lines.push("");
-
       const md = htmlToMarkdown(post.textHtml) || post.text;
       if (md) {
         lines.push(md);
         lines.push("");
       }
-
-      if (post.forwardFrom) {
-        lines.push(`↩️ Forwarded from: ${post.forwardFrom}`);
-      }
-      if (post.mediaType !== "none") {
-        lines.push(`📎 Media: ${post.mediaType}`);
-      }
-
+      if (post.forwardFrom) lines.push(`↩️ Forwarded from: ${post.forwardFrom}`);
+      if (post.mediaType !== "none") lines.push(`📎 Media: ${post.mediaType}`);
       const meta: string[] = [];
       if (post.views && post.views !== "0") meta.push(`👁 ${post.views}`);
       meta.push(`🔗 [Original](https://t.me/${channel.name}/${post.id})`);
       lines.push(meta.join(" | "));
-
       lines.push("");
       lines.push("---");
       lines.push("");
     }
   }
-
   return lines.join("\n");
 }
-
-// ---------------------------------------------------------------------------
-// JSON formatter
-// ---------------------------------------------------------------------------
 
 export function toJSON(
   channel: ChannelMeta,
@@ -156,7 +140,6 @@ export function toJSON(
   chunkInfo?: { index: number; total: number }
 ): string {
   const fullText = posts.map((p) => p.text).join(" ");
-
   const output = {
     meta: {
       channel: `@${channel.name}`,
@@ -180,19 +163,7 @@ export function toJSON(
       url: `https://t.me/${channel.name}/${p.id}`,
     })),
   };
-
   return JSON.stringify(output, null, 2);
-}
-
-// ---------------------------------------------------------------------------
-// CSV formatter
-// ---------------------------------------------------------------------------
-
-function escapeCSV(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 export function toCSV(
@@ -202,6 +173,13 @@ export function toCSV(
 ): string {
   const headers = ["id", "date", "text", "views", "media_type", "forward_from", "url"];
   const lines: string[] = [headers.join(",")];
+
+  function escapeCSV(value: string): string {
+    if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
 
   for (const p of posts) {
     const row = [
@@ -215,13 +193,25 @@ export function toCSV(
     ];
     lines.push(row.join(","));
   }
-
   return lines.join("\n");
 }
 
+/** TOON (Token-Optimized Object Notation) Formatter */
+export function toTOON(
+  channel: ChannelMeta,
+  posts: TelegramPost[],
+  chunkInfo?: { index: number; total: number }
+): string {
+  const header = `CHANNEL: @${channel.name}\nTITLE: ${channel.title}\n${chunkInfo ? `CHUNK: ${chunkInfo.index + 1}/${chunkInfo.total}\n` : ""}---\n`;
+  const body = posts.map(p => {
+    const date = p.date.split("T")[0];
+    return `[${p.id}|${date}|${p.views}v] ${p.text.replace(/\n/g, " ")}`;
+  }).join("\n");
+  return header + body;
+}
+
 // ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// Format dispatcher
+// Format dispatcher & Archive
 // ---------------------------------------------------------------------------
 
 export type FormatType = "md" | "json" | "csv" | "toon";
@@ -232,22 +222,6 @@ export interface ExportFile {
   mimeType: string;
   postsInChunk: number;
   dateRange?: string;
-}
-
-/** TOON (Token-Optimized Object Notation) Formatter */
-export function toTOON(
-  channel: ChannelMeta,
-  posts: TelegramPost[],
-  chunkInfo?: { index: number; total: number }
-): string {
-  const header = `CHANNEL: @${channel.name}\nTITLE: ${channel.title}\n${chunkInfo ? `CHUNK: ${chunkInfo.index + 1}/${chunkInfo.total}\n` : ""}---\n`;
-  
-  const body = posts.map(p => {
-    const date = p.date.split("T")[0];
-    return `[${p.id}|${date}|${p.views}v] ${p.text.replace(/\n/g, " ")}`;
-  }).join("\n");
-
-  return header + body;
 }
 
 export function formatExport(
@@ -306,4 +280,13 @@ export function formatExport(
   });
 
   return files;
+}
+
+/** Create a ZIP archive from multiple export files */
+export function createArchive(files: ExportFile[]): Buffer {
+  const zip = new AdmZip();
+  for (const file of files) {
+    zip.addFile(file.filename, Buffer.from(file.content, "utf-8"));
+  }
+  return zip.toBuffer();
 }
