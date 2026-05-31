@@ -43,6 +43,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: "Max posts to fetch per channel (default: 1000).",
               default: 1000,
             },
+            format: {
+              type: "string",
+              enum: ["md", "json", "csv", "toon"],
+              description: "Output format (default: md).",
+              default: "md",
+            },
           },
           required: ["channel"],
         },
@@ -53,9 +59,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (request.params.name === "fetch_telegram_channel") {
-    const { channel, limit = 1000 } = request.params.arguments as {
+    const { channel, limit = 1000, format = "md" } = request.params.arguments as {
       channel: string;
       limit?: number;
+      format?: "md" | "json" | "csv" | "toon";
     };
 
     const channels = parseMultipleChannels(channel, 20);
@@ -71,7 +78,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       for (const channelName of channels) {
         const result = await scrapeChannel(channelName, limit);
         if (result.posts.length > 0) {
-          const files = formatExport(result, "md");
+          const files = formatExport(result, format);
           allFiles.push(...files);
         }
       }
